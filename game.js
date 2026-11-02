@@ -1,7 +1,7 @@
-import {songs,compileSong,noteName,laneLabels} from './songs.js?v=6';
+import {songs,compileSong,noteName,laneLabels} from './songs.js?v=7';
 import {parseMidi,midiSong,validateImportedSong} from './midi-import.js?v=5';
 import {LessonEngine} from './lesson-engine.js?v=3';
-import {gestures,chordNotes,lessonLane} from './music.js?v=6';
+import {gestures,chordNotes,lessonLane} from './music.js?v=7';
 export function createLesson({synth,ensureCamera,handSVG,onViewChange,isVisible=()=>true}){
  const $=id=>document.getElementById(id);let enabled=true,engine=null,playing=false,starting=false,runToken=0,lastFrame=0,cameraLane=null,candidate=null,candidateSince=0,keyLane=null,pointerLane=null,soundKey=null,song=songs[0],events=compileSong(song),best={};
  try{best=JSON.parse(localStorage.getItem('airchord-lesson-best')||'{}');}catch{}

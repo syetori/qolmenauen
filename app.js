@@ -1,6 +1,6 @@
-import {createLesson} from './game.js?v=6';
+import {createLesson} from './game.js?v=7';
 import {createMainDetector} from './detector.js?v=4';
-import {gestures,resolve,fingerMask,Synth,chordNotes} from './music.js?v=6';
+import {gestures,resolve,fingerMask,Synth,chordNotes} from './music.js?v=7';
 let lesson=null;
 const $=id=>document.getElementById(id),synth=new Synth();let mainDetector=null,startGeneration=0,initTimer=null,fallbackStarting=false,workerError=null;let worker=null,stream=null,running=false,busy=false,ready=false,lastVideo=-1,lastResult=0,candidate=null,candidateAt=0,current=null,preview=null,session=0,previous={},custom=[];
 try{custom=JSON.parse(localStorage.getItem('airchord-gestures')||'[]').filter(c=>Number.isInteger(c.left)&&Number.isInteger(c.right)&&chordNotes(c.chord).length);}catch{}const names=['большой','указательный','средний','безымянный','мизинец'];

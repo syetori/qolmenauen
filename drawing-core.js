@@ -14,14 +14,14 @@ export function brushFromMotion(base,point){return{width:clamp(base.width*2**((p
 export class SmoothPoint{constructor(){this.reset();}reset(){this.last=null;this.filtered=null;this.velocity={x:0,y:0};this.time=0;}update(p,t){if(!this.last||t-this.time>250){this.last={...p};this.filtered={...p};this.time=t;return{...p};}const dt=clamp((t-this.time)/1000,.008,.12);for(const axis of ['x','y']){const v=(p[axis]-this.last[axis])/dt;this.velocity[axis]+=.35*(v-this.velocity[axis]);const cutoff=3+12*Math.abs(this.velocity[axis]),a=1/(1+1/(2*Math.PI*cutoff*dt));this.filtered[axis]+=a*(p[axis]-this.filtered[axis]);}this.last={...p};this.time=t;return{...this.filtered};}}
 export class GestureState{
  constructor(){this.reset();}
- reset(){this.pinchState={};this.pose=null;this.poseAt=0;this.fired=false;this.zoomLock=false;this.releaseAt=null;this.lastTime=null;this.lastSeen=null;this.drawing=false;this.lastDrawAt=0;this.lastPoint=null;this.swipe=null;this.penReleaseAt=null;}
- update(hands,now,preferred='auto',mode='relaxed',historyEnabled=true){
+ reset(){this.pinchState={};this.pose=null;this.poseAt=0;this.fired=false;this.zoomLock=false;this.releaseAt=null;this.lastTime=null;this.lastSeen=null;this.drawing=false;this.lastDrawAt=0;this.lastPoint=null;this.penReleaseAt=null;}
+ update(hands,now,preferred='auto',mode='relaxed'){
   if(this.lastTime!==null&&now-this.lastTime>400)this.reset();this.lastTime=now;
   const features=hands.map(h=>analyzeHand(h,this.pinchState[h.side]||this.drawing&&hands.length===1,mode));this.pinchState=Object.fromEntries(features.map(h=>[h.side,h.pinch]));
   // A second hand is a navigation clutch immediately, even before either pinch is exact.
-  if(features.length>=2){this.drawing=false;this.zoomLock=true;this.pose=null;this.fired=false;this.swipe=null;const pinched=features.filter(h=>h.pinch);return pinched.length>=2?{type:'zoom',points:pinched.slice(0,2).map(h=>h.point)}:{type:'prepareZoom',hint:'Рисование приостановлено: сведите пальцы обеих рук для масштаба'};}
+  if(features.length>=2){this.drawing=false;this.zoomLock=true;this.pose=null;this.fired=false;const pinched=features.filter(h=>h.pinch);return pinched.length>=2?{type:'zoom',points:pinched.slice(0,2).map(h=>h.point)}:{type:'prepareZoom',hint:'Рисование приостановлено: сведите пальцы обеих рук для масштаба'};}
   const hand=preferred==='auto'?features[0]:features.find(h=>h.side===preferred);
-  if(!hand){if(this.drawing&&this.lastSeen!==null&&now-this.lastSeen<=180)return{type:'suspend',hint:'Сохраняем штрих: ждём руку'};this.drawing=false;this.pose=null;this.fired=false;this.swipe=null;if(!features.length)this.zoomLock=false;return{type:'idle'};}
+  if(!hand){if(this.drawing&&this.lastSeen!==null&&now-this.lastSeen<=180)return{type:'suspend',hint:'Сохраняем штрих: ждём руку'};this.drawing=false;this.pose=null;this.fired=false;if(!features.length)this.zoomLock=false;return{type:'idle'};}
   this.lastSeen=now;
   if(this.zoomLock){this.drawing=false;this.pose=null;if(!hand.pinch)this.zoomLock=false;return{type:'hover',point:hand.point,hint:'После двух рук разожмите щипок, чтобы снова рисовать'};}
   // Brief classification glitches do not lift the pen. A clearly opened pinch does.
@@ -29,24 +29,15 @@ export class GestureState{
   if(this.drawing&&!hand.pinch&&hand.release&&!hand.openPalm&&!hand.fist){if(this.penReleaseAt===null)this.penReleaseAt=now;if(now-this.penReleaseAt<75)return{type:'suspend',hint:'Поднимаем кисть после раскрытия щипка'};}
 
   if(this.drawing&&!hand.pinch&&!hand.release&&!hand.openPalm&&!hand.fist&&now-this.lastDrawAt<=180)return{type:'suspend',point:hand.point,hint:'Щипок удерживается'};
-  const pose=hand.fist?'color':hand.openPalm?(historyEnabled?'history':'hover'):hand.pinch?'draw':hand.tool?'tool':hand.adjust?'adjust':hand.vSign?'layer':'hover';
+  const pose=hand.fist?'color':hand.openPalm?'hover':hand.pinch?'draw':hand.tool?'tool':hand.adjust?'adjust':hand.vSign?'layer':'hover';
   if(this.fired&&this.pose&&pose!==this.pose&&pose!=='draw'){if(this.releaseAt===null)this.releaseAt=now;if(now-this.releaseAt<180)return{type:'hover',point:hand.point};}
-  if(pose!==this.pose){this.pose=pose;this.poseAt=now;this.fired=false;this.releaseAt=null;this.swipe=null;}else this.releaseAt=null;
+  if(pose!==this.pose){this.pose=pose;this.poseAt=now;this.fired=false;this.releaseAt=null;}else this.releaseAt=null;
   const held=now-this.poseAt;
   if(pose==='draw'){
    if(held<35&&!this.drawing)return{type:'hover',point:hand.point};
    const breakStroke=this.drawing&&this.lastPoint&&distance(this.lastPoint,hand.point)>.18;this.drawing=true;this.lastDrawAt=now;this.lastPoint=hand.point;return{type:'draw',point:hand.point,breakStroke:!!breakStroke};
   }
   this.drawing=false;
-  if(pose==='history'){
-   if(this.fired)return{type:'hover',point:hand.center,hint:'Смахивание принято. Согните пальцы перед повтором'};
-   if(!this.swipe)this.swipe={anchor:hand.center,at:now,armed:false};const sw=this.swipe;
-   if(!sw.armed){if(distance(sw.anchor,hand.center)>.045){sw.anchor=hand.center;sw.at=now;}if(now-sw.at>=280){sw.armed=true;sw.anchor=hand.center;sw.at=now;}return{type:'hover',point:hand.center,progress:Math.min(1,(now-sw.at)/280),hint:'Открытая ладонь: задержите, затем смахните вправо — отмена, влево — повтор'};}
-   const dx=hand.center.x-sw.anchor.x,dy=hand.center.y-sw.anchor.y,elapsed=now-sw.at;
-   if(elapsed>750||Math.abs(dy)>.13){this.swipe=null;return{type:'hover',point:hand.center,hint:'Ладонь готовится к новому смахиванию'};}
-   if(Math.abs(dx)>=.16&&Math.abs(dx)/Math.max(.04,elapsed/1000)>=.4){this.fired=true;return{type:dx>0?'undo':'redo',point:hand.center,once:true};}
-   return{type:'hover',point:hand.center,progress:1,hint:'Ладонь готова: вправо — отмена · влево — повтор'};
-  }
   if(pose==='color'||pose==='layer'||pose==='tool'){const duration=pose==='tool'?950:550,progress=Math.min(1,held/duration);if(progress===1&&!this.fired){this.fired=true;return{type:pose,point:hand.center,once:true,progress};}return{type:'hover',point:hand.center,progress,hint:this.fired?'Жест принят — раскройте ладонь':pose==='color'?'Держите кулак: следующий цвет':pose==='tool'?'Два пальца: держите секунду для смены кисти и ластика':'Держите V: следующий слой'};}
   if(pose==='adjust')return{type:held>=300?'adjust':'hover',point:hand.center,progress:Math.min(1,held/300),hint:'Большой вверх: настройка кисти'};
   return{type:'hover',point:hand.point,hint:'Мягкий щипок — выбранная кисть или ластик'};
