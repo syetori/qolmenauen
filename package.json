@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test.mjs camera-lifecycle.test.mjs lesson.test.mjs drawing.test.mjs hand-camera.test.mjs midi-import.test.mjs"
+    "test": "node --test test.mjs camera-lifecycle.test.mjs lesson.test.mjs drawing.test.mjs hand-camera.test.mjs midi-import.test.mjs groove.test.mjs sample-synth.test.mjs"
   }
 }
