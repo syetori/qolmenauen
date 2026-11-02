@@ -1,8 +1,8 @@
 import {createLesson} from './game.js?v=9';
 import {createMainDetector,prepareTracking} from './detector.js?v=9';
 import {gestures,resolve,fingerMask,chordNotes} from './music.js?v=8';
-import {SampleSynth as Synth} from './sample-synth.js?v=8';
-import {createGrooveUI} from './groove-ui.js?v=8';
+import {SampleSynth as Synth} from './sample-synth.js?v=10';
+import {createGrooveUI} from './groove-ui.js?v=10';
 import {voicing} from './voicings.js?v=8';
 let lesson=null,groove=null;
 const $=id=>document.getElementById(id),synth=new Synth();let trackingStarted=0;let mainDetector=null,startGeneration=0,initTimer=null,fallbackStarting=false,workerError=null;let worker=null,stream=null,running=false,busy=false,ready=false,lastVideo=-1,lastResult=0,candidate=null,candidateAt=0,current=null,preview=null,session=0,previous={},custom=[];
