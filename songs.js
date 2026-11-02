@@ -50,3 +50,10 @@ songs.push(
  study('joy','Joy to the World','Лоуэлл Мейсон · 1848','C5:2 B4:1.5 A4:.5 G4:3 F4 E4:2 D4:2 C4:3 G4 A4:3 A4 B4:3 B4 C5:3 C5 C5 B4 A4 G4 G4 F4 E4 C5 C5 B4 A4 G4 G4 F4 E4 E4 E4 E4 F4 G4:3 F4 E4 D4 C4:4',84,'Зимние мелодии'),
  study('thisold','This Old Man','Традиционная английская мелодия','G4 E4 G4:2 G4 E4 G4:2 A4 G4 F4 E4 D4 E4 F4 E4 D4 C4 D4 E4 C4 E4 G4:2 G4 F4 E4 D4 C4:4',88)
 );
+
+// Short harmony drills only: no vocal melody, lyrics or full-song transcription.
+function harmonyDrill(id,title,author,chords,bpm,source){const unique=[...new Set(chords)];return{id,title,author,category:'Современные · аккорды',tag:'Короткий аккордовый цикл',bpm,kind:'chords',source,chordLanes:Object.fromEntries(unique.map((c,i)=>[c,i])),notes:Array.from({length:Math.ceil(16/chords.length)},()=>chords).flat().map(name=>({name,beats:4})),description:'Короткий учебный цикл по гармонии песни. Ровный ритм и аккорды без вокальной мелодии; это упражнение, а не полная аранжировка. Выберите аккорд нужным жестом и удерживайте.'};}
+songs.unshift(
+ harmonyDrill('city-of-stars','City of Stars · аккорды','La La Land · Justin Hurwitz',['Gm','Dm','C','Bb'],90,'https://supersimplechords.com/songs/city-of-stars-from-la-la-land-ryan-gosling-and-emma-stone'),
+ harmonyDrill('mrs-magic','Mrs. Magic · аккорды','Strawberry Guy',['Ab6','Ebmaj7'],67,'https://www.guitartabsexplorer.com/strawberry-guy/mrs-magic-chords')
+);

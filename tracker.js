@@ -5,8 +5,9 @@ self.onmessage=async({data})=>{
   try{
    importScripts('./vendor/vision-classic.js');
    const {HandLandmarker,FilesetResolver}=self.vision;
+   const confidence=data.profile==='drawing'?.5:.6;
    const files=await FilesetResolver.forVisionTasks(new URL('./vendor',self.location.href).href);
-   detector=await HandLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:new URL('./vendor/hand_landmarker.task',self.location.href).href,delegate:'CPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:.6,minHandPresenceConfidence:.6,minTrackingConfidence:.6});
+   detector=await HandLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:new URL('./vendor/hand_landmarker.task',self.location.href).href,delegate:'CPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:confidence,minHandPresenceConfidence:confidence,minTrackingConfidence:confidence});
    postMessage({type:'ready'});
   }catch(e){postMessage({type:'error',message:e?.message||String(e)});}
  }else if(data.type==='frame'){
