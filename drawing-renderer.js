@@ -1,4 +1,4 @@
-import {ART_WIDTH,ART_HEIGHT,clamp,screenToWorld,zoomAround} from './drawing-core.js?v=4';
+import {ART_WIDTH,ART_HEIGHT,clamp,screenToWorld,zoomAround} from './drawing-core.js?v=4.1';
 export function paintStroke(ctx,s){if(!s.points.length)return;ctx.save();ctx.globalCompositeOperation=s.tool==='erase'?'destination-out':'source-over';ctx.globalAlpha=s.tool==='erase'?1:s.alpha;ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=s.width;ctx.lineCap='round';ctx.lineJoin='round';const p=s.points;ctx.beginPath();if(p.length===1){ctx.arc(p[0].x,p[0].y,s.width/2,0,Math.PI*2);ctx.fill();}else{ctx.moveTo(p[0].x,p[0].y);for(let i=1;i<p.length-1;i++)ctx.quadraticCurveTo(p[i].x,p[i].y,(p[i].x+p[i+1].x)/2,(p[i].y+p[i+1].y)/2);ctx.lineTo(p.at(-1).x,p.at(-1).y);ctx.stroke();}ctx.restore();}
 const bitmap=()=>{const c=document.createElement('canvas');c.width=ART_WIDTH;c.height=ART_HEIGHT;return c;};
 export class DrawingRenderer{

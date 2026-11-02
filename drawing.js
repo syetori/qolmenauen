@@ -1,5 +1,5 @@
-import {DrawingDocument,GestureState,SmoothPoint,PALETTE,ART_WIDTH,ART_HEIGHT,clamp,screenToWorld,twoHandView} from './drawing-core.js?v=4';
-import {DrawingRenderer} from './drawing-renderer.js?v=4';
+import {DrawingDocument,GestureState,SmoothPoint,PALETTE,ART_WIDTH,ART_HEIGHT,clamp,screenToWorld,twoHandView,brushFromMotion} from './drawing-core.js?v=4.1';
+import {DrawingRenderer} from './drawing-renderer.js?v=4.1';
 import {HandCamera} from './hand-camera.js?v=4';
 import {fingerMask} from './music.js?v=3';
 const edges=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
@@ -29,7 +29,7 @@ export async function mountDrawing(){
   const point=action.point?smooth.update(action.point,now):null,screen=point?{x:point.x*renderer.width,y:point.y*renderer.height}:null;
   if(action.type==='color'){const i=PALETTE.indexOf(color);color=PALETTE[(i+1)%PALETTE.length];updateControls();save();status('Новый цвет · раскройте ладонь');}
   else if(action.type==='layer'){model.selectNext();layers();updateControls();save();status('Выбран '+model.active.name+' · раскройте ладонь');}
-  else if(action.type==='adjust'){if(!adjustBase)adjustBase={point:action.point,width,alpha};width=clamp(adjustBase.width*2**((action.point.x-adjustBase.point.x)*5),1,72);alpha=clamp(adjustBase.alpha+(adjustBase.point.y-action.point.y)*1.6,.05,1);updateControls();status('Настройка · вправо: толще · вверх: непрозрачнее');}
+  else if(action.type==='adjust'){if(!adjustBase)adjustBase={point:action.point,width,alpha};({width,alpha}=brushFromMotion(adjustBase,action.point));updateControls();status('Настройка · вправо: толще · вверх: прозрачнее');}
   else if((action.type==='draw'||action.type==='erase')&&screen){if(lastAction!==action.type){endStroke();}const tool=action.type==='erase'?'erase':strokeTool;strokeAt(screen,tool);status(tool==='erase'?'Ластик · стираем только выбранный слой':'Рисуем · разожмите щипок, чтобы поднять кисть');}
   else status(action.hint||'Щипок — рисовать');
   if(screen)cursor(screen,{erase:action.type==='erase'||strokeTool==='erase',progress:action.progress});else{renderer.cursor=null;renderer.invalidate();}lastAction=action.type;
