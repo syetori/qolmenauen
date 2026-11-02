@@ -1,13 +1,13 @@
-/* Classic worker: MediaPipe's WASM loader requires importScripts(). */
+/* Assets are prepared once, in parallel, before worker initialization. */
 let detector;
 self.onmessage=async({data})=>{
  if(data.type==='init'){
   try{
    importScripts('./vendor/vision-classic.js');
-   const {HandLandmarker,FilesetResolver}=self.vision;
+   if(!data.prepared)throw Error('Нет подготовленных файлов отслеживания');
    const confidence=data.profile==='drawing'?.5:.6;
-   const files=await FilesetResolver.forVisionTasks(new URL('./vendor',self.location.href).href);
-   detector=await HandLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:new URL('./vendor/hand_landmarker.task',self.location.href).href,delegate:'CPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:confidence,minHandPresenceConfidence:confidence,minTrackingConfidence:confidence});
+   postMessage({type:'progress',message:'Файлы готовы. Запускаем распознавание…'});
+   detector=await self.vision.HandLandmarker.createFromOptions(data.prepared.files,{baseOptions:{modelAssetBuffer:data.prepared.model,delegate:'CPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:confidence,minHandPresenceConfidence:confidence,minTrackingConfidence:confidence});
    postMessage({type:'ready'});
   }catch(e){postMessage({type:'error',message:e?.message||String(e)});}
  }else if(data.type==='frame'){
