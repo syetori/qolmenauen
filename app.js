@@ -1,4 +1,4 @@
-import {createLesson} from './game.js?v=4';
+import {createLesson} from './game.js?v=5';
 import {createMainDetector} from './detector.js?v=4';
 import {gestures,resolve,fingerMask,Synth,chordNotes} from './music.js?v=3';
 let lesson=null;
