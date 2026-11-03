@@ -215,6 +215,7 @@ export function mountSculpt(section){
       pending.push(sample);
       if(symmetry&&Math.abs(p.x)>radius*.18)pending.push({...sample,point:[-p.x,p.y,p.z],normal:[-normal[0],normal[1],normal[2]]});
     }
+    window.dispatchEvent(new CustomEvent('qolmen-practice',{detail:'sculpt-brush'}));
     previous=point;
     if(!outstanding)flush();
   }
@@ -411,6 +412,8 @@ export function mountSculpt(section){
     pose=current;
     if(!stable)return;
     const dx=smooth.x-last.at.x,dy=smooth.y-last.at.y;
+    if(Math.abs(dx)+Math.abs(dy)>.003||mode==='pan'&&Math.abs(spread-last.spread)>.004)
+      window.dispatchEvent(new CustomEvent('qolmen-practice',{detail:mode}));
     if(mode==='grab'){
       model.rotateOnWorldAxis(new T.Vector3(0,1,0),dx*5);
       model.rotateOnWorldAxis(new T.Vector3(1,0,0),dy*5);

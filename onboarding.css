@@ -1,0 +1,9 @@
+.onboarding{position:fixed;z-index:20;left:1rem;bottom:1rem;width:min(23rem,calc(100vw - 2rem));box-sizing:border-box;padding:1rem;border:1px solid #647d5b;border-radius:1rem;background:#17231b;color:#f2ffe9;box-shadow:0 6px 30px #0008}
+.onboarding h2{margin:.25rem 0;font-size:1.15rem}
+.onboarding p{margin:.4rem 0 .8rem;line-height:1.35}
+.onboarding small{color:#c4e6b6}
+.onboarding div{display:flex;gap:.4rem;flex-wrap:wrap}
+.onboarding button,.onboarding-launch{padding:.45rem .7rem;font-size:.8rem}
+.onboarding button:disabled{opacity:.4;cursor:default}
+.onboarding[hidden],.onboarding-launch[hidden]{display:none!important}
+.onboarding-target{outline:2px solid #c7fc8a;outline-offset:3px}
