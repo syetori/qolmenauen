@@ -32,7 +32,7 @@ function download(data,name,type){
 export function mountSculpt(section){
   section.innerHTML=`
     <div class="sculpt-head"><a href="#">← На главную</a><h1>Мүсін</h1>${button('camera','Включить камеру')}</div>
-    <div class="sculpt-stage"><video class="sculpt-camera" muted playsinline hidden></video>
+    <div class="sculpt-stage"><div class="sculpt-preview"><span>Камера</span><video class="sculpt-camera" muted playsinline hidden></video></div>
       <div class="sculpt-tools">${Object.entries(tools).map(([id,label])=>button(id,label)).join('')}
         ${button('undo','Отменить')}${button('redo','Повторить')}${button('show','Показ')}${button('frame','В центр')}
         <div class="sculpt-axes" aria-label="Вид вдоль оси">${button('axisX','X')}${button('axisY','Y')}${button('axisZ','Z')}</div>
@@ -127,14 +127,21 @@ export function mountSculpt(section){
   section.addEventListener('input',e=>{
     if(e.target.matches('#background,#roughness,#light')){settings();autosave();}
   });
+  function fitDistance(fraction){
+    if(!model.geometry.getAttribute('position')?.count)return 6;
+    const radius=model.geometry.boundingSphere.radius*model.scale.x;
+    const slope=Math.tan(T.MathUtils.degToRad(camera.fov/2))*Math.min(1,camera.aspect)*fraction;
+    return radius/Math.sin(Math.atan(slope));
+  }
   function render(now){
     if(!active)return;
     if(show)model.rotateY(Math.min(.05,(now-time)/1000)*Number(value('speed')));
     time=now;
-    const w=stage.clientWidth-get('.sculpt-tools').offsetWidth,h=stage.clientHeight;
+    const w=stage.clientWidth-get('.sculpt-tools').offsetWidth-get('.sculpt-preview').offsetWidth,h=stage.clientHeight;
     if(w&&h&&(canvas.style.width!==w+'px'||canvas.style.height!==h+'px')){
       renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();
     }
+    orbit.radius=Math.max(orbit.radius,fitDistance(.77));
     camera.position.setFromSpherical(orbit).add(target);camera.lookAt(target);camera.updateMatrixWorld();
     renderer.render(scene,camera);
     raf=requestAnimationFrame(render);
@@ -209,7 +216,10 @@ export function mountSculpt(section){
     mesh.setAttribute('position',new T.BufferAttribute(positions,3));
     mesh.setAttribute('normal',new T.BufferAttribute(normals,3));
     mesh.setAttribute('color',new T.BufferAttribute(colors,3));
+    mesh.computeBoundingSphere();
+    const firstMesh=!model.geometry.getAttribute('position');
     model.geometry.dispose();model.geometry=mesh;
+    if(firstMesh)orbit.radius=fitDistance(.52);
     outstanding--;
     if(!outstanding)flush();
   };
@@ -429,7 +439,7 @@ export function mountSculpt(section){
         orbit.theta=axis==='X'?Math.PI/2:0;orbit.phi=axis==='Y'?.0001:Math.PI/2;
         break;
       }
-      case 'frame':target.set(0,0,0);orbit.set(4.6,1.42,.24);break;
+      case 'frame':target.set(0,0,0);orbit.set(fitDistance(.52),1.42,.24);break;
       case 'save':end();saveFile=true;send('save');break;
       case 'reset':
         if(confirm('Заменить текущую модель выбранной заготовкой?')){

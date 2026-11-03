@@ -41,3 +41,8 @@ body[data-workspace=sculpt]>main{width:min(97vw,1680px);max-width:none}
  .sculpt-camera{right:104px;width:min(43%,180px)}
 }
 .sculpt-wheel{background:radial-gradient(circle,#172320 0 22%,transparent 23%),repeating-conic-gradient(from calc(var(--sector,45deg) / -2),#455b50 0 1deg,#172320 1deg var(--sector,45deg))}
+.sculpt-stage{--camera-column:clamp(140px,23%,350px);--tools-column:124px;padding-right:0}
+.sculpt-tools{right:var(--camera-column);width:var(--tools-column)}
+.sculpt-preview{position:absolute;inset:0 0 0 auto;width:var(--camera-column);display:flex;flex-direction:column;justify-content:center;gap:.6rem;padding:12px;background:#182120;border-left:1px solid #596257;color:#c9d2c5;font-size:.8rem;pointer-events:none;box-sizing:border-box}
+.sculpt-preview .sculpt-camera{position:static;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;background:#121817}
+@media(max-width:600px){.sculpt-stage{--camera-column:24%;--tools-column:88px}.sculpt-preview{padding:5px}}
