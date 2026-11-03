@@ -85,7 +85,7 @@ export function mountSculpt(section){
     mirrorControls:localStorage.getItem('musin-mirrorControls')!=='false'
   };
   function mirrorView(){
-    video.style.transform=mirrorSettings.mirrorCamera?'scaleX(-1)':'none';
+    get('.sculpt-feed').style.transform=mirrorSettings.mirrorCamera?'scaleX(-1)':'none';
     for(const [action,enabled] of Object.entries(mirrorSettings)){
       get('[data-action='+action+']').setAttribute('aria-pressed',String(enabled));
     }
@@ -102,7 +102,7 @@ export function mountSculpt(section){
     if(bones.width!==width||bones.height!==height){bones.width=width;bones.height=height;}
     ink.clearRect(0,0,width,height);
     if(!showBones)return;
-    const x=point=>(mirrorSettings.mirrorCamera?1-point.x:point.x)*width;
+    const x=point=>point.x*width;
     ink.strokeStyle='#c7fc8a';ink.fillStyle='#f0ffda';ink.lineWidth=3;ink.lineCap='round';
     for(const hand of hands){
       for(const chain of fingers){

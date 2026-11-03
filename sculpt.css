@@ -57,3 +57,4 @@ body[data-workspace=sculpt]>main{width:min(97vw,1680px);max-width:none}
 .sculpt-preview button{pointer-events:auto;align-self:start;max-width:100%;overflow-wrap:anywhere}
 .sculpt-preview .sculpt-camera{display:block}
 .sculpt-preview .sculpt-camera[hidden]{visibility:hidden}
+.sculpt-preview .sculpt-camera{transform:none}
