@@ -35,6 +35,8 @@ export function mountSculpt(section){
     <div class="sculpt-stage"><video class="sculpt-camera" muted playsinline hidden></video>
       <div class="sculpt-tools">${Object.entries(tools).map(([id,label])=>button(id,label)).join('')}
         ${button('undo','Отменить')}${button('redo','Повторить')}${button('show','Показ')}${button('frame','В центр')}
+        <div class="sculpt-axes" aria-label="Вид вдоль оси">${button('axisX','X')}${button('axisY','Y')}${button('axisZ','Z')}</div>
+        ${button('mirror','Зеркало')}
       </div>
       <div class="sculpt-cursor" hidden></div><div class="sculpt-wheel" hidden></div>
     </div>
@@ -55,7 +57,7 @@ export function mountSculpt(section){
       ${button('glb','GLB')}${button('obj','OBJ + MTL')}${button('stl','STL')}${button('png','PNG')}${button('jpeg','JPEG')}
     </div>
     <details><summary>Настроить круг инструментов</summary><label>Секторов <select id="count"><option>6</option><option selected>8</option></select></label><div class="sculpt-layout"></div></details>
-    <p>Щипок нажимает кнопки. Щипок и ладонь лепят. Два щипка приближают и сдвигают вид. Кулак вращает модель, два кулака обходят сцену. Кулак и щипок меняют размер. Два пальца вместе открывают круг.</p>
+    <p>Удерживайте щипок над кнопкой около 1,7 секунды. Щипок и ладонь лепят. Два щипка приближают и сдвигают вид. Кулак вращает модель, два кулака обходят сцену. Кулак и щипок меняют размер. Два пальца вместе открывают круг.</p>
     <p>Мышь лепит левой кнопкой, вращает вид правой и приближает колесом.</p>`;
   const get=s=>section.querySelector(s), value=id=>get('#'+id).value;
   const stage=get('.sculpt-stage'), video=get('video'), cursor=get('.sculpt-cursor'), wheel=get('.sculpt-wheel');
@@ -76,7 +78,10 @@ export function mountSculpt(section){
   const send=(type,extra={})=>worker.postMessage({type,...extra});
   let active=false, raf, time=0, tool='add', symmetry=false, show=false, mouse=null;
   let stroke=false, previous=null, pending=[], outstanding=0, saveTimer, saveFile=false;
-  let old=new Map(), pose=null, hold=null, radial=null, hover=null, slider=null;
+  let old=new Map(), pose=null, hold=null, radial=null, hover=null, slider=null, dwell=null, fired=false;
+  let mirror=localStorage.getItem('musin-mirror')==='true';
+  function mirrorView(){video.style.transform=mirror?'scaleX(-1)':'none';get('[data-action=mirror]').setAttribute('aria-pressed',String(mirror));}
+  mirrorView();
   const blocked=new Set(), palmGuard=new Set();
   let layout=Object.keys(tools);
   try{
@@ -126,7 +131,7 @@ export function mountSculpt(section){
     if(!active)return;
     if(show)model.rotateY(Math.min(.05,(now-time)/1000)*Number(value('speed')));
     time=now;
-    const w=stage.clientWidth,h=stage.clientHeight;
+    const w=stage.clientWidth-get('.sculpt-tools').offsetWidth,h=stage.clientHeight;
     if(w&&h&&(canvas.style.width!==w+'px'||canvas.style.height!==h+'px')){
       renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();
     }
@@ -146,7 +151,7 @@ export function mountSculpt(section){
   }
   function dab(x,y){
     if(show)return;
-    const b=stage.getBoundingClientRect();
+    const b=canvas.getBoundingClientRect();
     ray.setFromCamera(new T.Vector2((x-b.left)/b.width*2-1,1-(y-b.top)/b.height*2),camera);
     model.updateMatrixWorld(true);
     const hit=ray.intersectObject(model)[0];
@@ -212,14 +217,31 @@ export function mountSculpt(section){
   database('readonly').then(record=>{
     if(record)load(record);else remesh('reset',{shape:'head'});
   }).catch(()=>remesh('reset',{shape:'head'}));
+  function clearDwell(){
+    dwell?.control.style.removeProperty('--dwell');
+    dwell=null;
+  }
+  function activate(control,hand){
+    if(!hand.pinch||fired){clearDwell();return false;}
+    const now=performance.now();
+    if(dwell?.control!==control||dwell.id!==hand.id){
+      clearDwell();dwell={control,id:hand.id,start:now};
+    }
+    const progress=clamp((now-dwell.start)/1650,0,1);
+    control.style.setProperty('--dwell',progress*100+'%');
+    if(progress<1)return false;
+    fired=true;clearDwell();
+    if(!control.matches('input[type=range]'))control.click();
+    return true;
+  }
   function closeWheel(){
-    radial=null;hold=null;wheel.hidden=true;
+    radial=null;hold=null;wheel.hidden=true;clearDwell();
   }
   function openWheel(h,p){
     const b=stage.getBoundingClientRect();
-    const x=clamp(p.x-b.left,106,b.width-106),y=clamp(p.y-b.top,106,b.height-106);
+    const x=clamp(p.x-b.left,113,Math.max(113,canvas.clientWidth-113)),y=clamp(p.y-b.top,113,b.height-113);
     radial={id:h.id,start:p,index:-1,count:Number(value('count'))};
-    wheel.style.left=x+'px';wheel.style.top=y+'px';wheel.replaceChildren();
+    wheel.style.left=x+'px';wheel.style.top=y+'px';wheel.style.setProperty('--sector',360/radial.count+'deg');wheel.replaceChildren();
     for(let i=0;i<radial.count;i++){
       const angle=i*Math.PI*2/radial.count,b=document.createElement('button');
       b.textContent=tools[layout[i]];
@@ -230,7 +252,7 @@ export function mountSculpt(section){
   }
   function resetGestures(){
     end();closeWheel();old.clear();blocked.clear();palmGuard.clear();
-    pose=null;slider=null;cursor.hidden=true;
+    pose=null;slider=null;dwell=null;fired=false;cursor.hidden=true;
     hover?.classList.remove('gesture-hover');hover=null;
   }
   function point(h){
@@ -244,11 +266,16 @@ export function mountSculpt(section){
       const id=data.handedness?.[i]?.[0]?.categoryName||String(i), prior=old.get(id);
       const mask=fingerMask(p,prior?.mask||0), span=Math.max(.03,gap(p[0],p[9]),gap(p[5],p[17]));
       const separation=Math.hypot(p[4].x-p[8].x,p[4].y-p[8].y,(p[4].z??0)-(p[8].z??0))/span;
-      const pinch=separation<(prior?.pinch?.36:.24);
+      const pinch=separation<(prior?.pinch?.43:.29);
+      const foldedIndex=gap(p[8],p[5])/span<.66;
+      const fistPose=(mask&30)===0&&(!pinch||foldedIndex);
+      const fistSince=fistPose?(prior?.fistSince??performance.now()):null;
+      const fist=fistPose&&performance.now()-fistSince>=90;
+      const x=v=>mirror?1-v:v;
       const tip=pinch?mid(p[4],p[8]):p[8];
-      return {id,mask,pinch,fresh:pinch&&prior?.pinch===false,tip:{x:1-tip.x,y:tip.y},
-        grip:{x:1-p[9].x,y:p[9].y}, palm:!pinch&&(mask&30)===30&&gap(p[5],p[17])/span>.43,
-        fist:!pinch&&(mask&30)===0,two:!pinch&&(mask&30)===6&&gap(p[8],p[12])/span<.55};
+      return {id,mask,pinch:pinch&&!fist,fistSince,tip:{x:x(tip.x),y:tip.y},
+        grip:{x:x(p[9].x),y:p[9].y}, palm:!pinch&&(mask&30)===30&&gap(p[5],p[17])/span>.43,
+        fist,two:!pinch&&(mask&30)===6&&gap(p[8],p[12])/span<.55};
     });
     if(!hands.length){resetGestures();return;}
     const lost=[...old.keys()].some(id=>!hands.some(h=>h.id===id));
@@ -267,10 +294,13 @@ export function mountSculpt(section){
       for(const h of pinches)blocked.add(h.id);
       const owner=hands.find(h=>h.id===radial.id);
       if(!owner){closeWheel();return;}
-      const second=hands.find(h=>h.id!==owner.id&&h.fresh);
+      const second=hands.find(h=>h.id!==owner.id&&h.pinch);
+      if(!second){fired=false;clearDwell();}
       if(second){
         const at=point(second), target=document.elementFromPoint(at.x,at.y);
-        if(target?.matches('button')&&wheel.contains(target)){blocked.add(second.id);target.click();return;}
+        if(target?.matches('button')&&wheel.contains(target)){
+          if(activate(target,second)){blocked.add(second.id);return;}
+        }else clearDwell();
       }
       if(!owner.two){
         if(radial.index>=0)pick(layout[radial.index]);
@@ -290,11 +320,11 @@ export function mountSculpt(section){
     const ui=section.contains(control)?control:null;
     hover?.classList.remove('gesture-hover');hover=ui;hover?.classList.add('gesture-hover');
     if(slider?.id!==hand.id||!hand.pinch)slider=null;
-    if(ui||slider||!insideStage(p,rect)){
+    if(!hand.pinch){fired=false;clearDwell();}
+    if((ui||slider||!insideStage(p,rect))&&!(hand.fist&&!hand.pinch)){
       end();pose=null;
       if(hand.pinch)blocked.add(hand.id);
-      if(hand.fresh&&ui?.matches('input[type=range]'))slider={id:hand.id,control:ui};
-      else if(hand.fresh&&ui)ui.click();
+      if(!slider&&ui&&activate(ui,hand)&&ui.matches('input[type=range]'))slider={id:hand.id,control:ui};
       if(slider){
         const c=slider.control,b=c.getBoundingClientRect();
         c.value=Number(c.min)+clamp((p.x-b.left)/b.width,0,1)*(c.max-c.min);
@@ -302,6 +332,7 @@ export function mountSculpt(section){
       }
       return;
     }
+    clearDwell();
     const palm=hands.find(h=>h.id!==hand.id&&h.palm);
     if(palm&&hand.pinch)palmGuard.add(palm.id);
     const fists=hands.filter(h=>h.fist&&!palmGuard.has(h.id));
@@ -319,20 +350,23 @@ export function mountSculpt(section){
     const spread=pair?Math.max(.04,gap(pair[0].grip,pair[1].grip)):1;
     const sizing=mode==='grab'?pinches.find(h=>!blocked.has(h.id)):null;
     const signature=mode+(pair||fists).map(h=>h.id).sort().join('/');
-    const current={signature,at,spread,sizing:sizing?.id,x:sizing?.grip.x};
-    const last=pose;pose=current;
-    if(last?.signature!==signature||gap(at,last.at)>.18)return;
-    const dx=at.x-last.at.x,dy=at.y-last.at.y;
+    const last=pose;
+    const stable=last?.signature===signature&&gap(at,last.at)<.18;
+    const smooth=stable?{x:last.at.x+(at.x-last.at.x)*.42,y:last.at.y+(at.y-last.at.y)*.42}:at;
+    const current={signature,at:smooth,spread,sizing:sizing?.id,x:sizing?.grip.x};
+    pose=current;
+    if(!stable)return;
+    const dx=smooth.x-last.at.x,dy=smooth.y-last.at.y;
     if(mode==='grab'){
       model.rotateOnWorldAxis(new T.Vector3(0,1,0),dx*5);
       model.rotateOnWorldAxis(new T.Vector3(1,0,0),dy*5);
       if(sizing&&last.sizing===sizing.id&&Math.abs(current.x-last.x)<.18)
-        model.scale.setScalar(clamp(model.scale.x*Math.exp((current.x-last.x)*4),.2,5));
+        model.scale.setScalar(clamp(model.scale.x*Math.exp((current.x-last.x)*2),.3,2.5));
       if(dx||dy||sizing)autosave();
     }else if(mode==='orbit'){
       orbit.theta-=dx*5;orbit.phi=clamp(orbit.phi-dy*4,.12,Math.PI-.12);
     }else{
-      orbit.radius=clamp(orbit.radius*last.spread/spread,1,18);
+      orbit.radius=clamp(orbit.radius*Math.pow(last.spread/spread,.48),2.4,15);
       target.add(new T.Vector3(-dx*orbit.radius,dy*orbit.radius,0).applyQuaternion(camera.quaternion));
     }
   }
@@ -356,7 +390,7 @@ export function mountSculpt(section){
     mouse.x=e.clientX;mouse.y=e.clientY;
   };
   canvas.onpointerup=canvas.onpointercancel=canvas.onlostpointercapture=()=>{mouse=null;end();};
-  canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.radius=clamp(orbit.radius*Math.exp(e.deltaY*.001),1,18);},{passive:false});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();orbit.radius=clamp(orbit.radius*Math.exp(e.deltaY*.0007),2.4,15);},{passive:false});
   async function exportModel(format){
     end();
     if(outstanding){status('Дождитесь обновления поверхности и повторите экспорт.');return;}
@@ -388,6 +422,13 @@ export function mountSculpt(section){
       case 'undo':case 'redo':end();remesh(action);autosave();break;
       case 'symmetry':end();symmetry=!symmetry;b.setAttribute('aria-pressed',String(symmetry));break;
       case 'show':end();show=!show;grid.visible=!show;b.setAttribute('aria-pressed',String(show));break;
+      case 'mirror': mirror=!mirror;localStorage.setItem('musin-mirror',String(mirror));mirrorView();resetGestures();break;
+      case 'axisX':case 'axisY':case 'axisZ': {
+        end();target.set(0,0,0);
+        const axis=action.slice(-1);
+        orbit.theta=axis==='X'?Math.PI/2:0;orbit.phi=axis==='Y'?.0001:Math.PI/2;
+        break;
+      }
       case 'frame':target.set(0,0,0);orbit.set(4.6,1.42,.24);break;
       case 'save':end();saveFile=true;send('save');break;
       case 'reset':

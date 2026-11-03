@@ -22,3 +22,22 @@
 .sculpt-layout select{max-width:145px}
 .sculpt-status{min-height:1.5em;color:#d6dccd}
 .entry-sculpt .entry-art{display:grid;place-items:center;font-size:4.5rem;color:#ffc5a5}
+body[data-workspace=sculpt]>main{width:min(97vw,1680px);max-width:none}
+.sculpt-stage{height:clamp(540px,78dvh,1050px);padding:0 124px 0 0}
+.sculpt-stage>canvas{max-width:none}
+.sculpt-tools{left:auto;right:0;top:0;bottom:0;width:124px;align-content:start;display:grid;grid-template-columns:1fr;gap:5px;padding:9px;background:#151d1c;border-left:1px solid #596257;overflow:auto;pointer-events:auto}
+.sculpt-tools button{width:100%;white-space:nowrap}
+.sculpt-axes{display:flex;gap:3px}
+#sculpt-app .sculpt-axes button{padding:.35rem}
+.sculpt-camera{right:137px;bottom:14px;width:clamp(150px,25%,330px);outline:1px solid #6c7869}
+.sculpt-wheel{background:#172320;box-shadow:0 0 0 9px #12181577,0 12px 32px #0009}
+.sculpt-wheel button{font-size:.75rem!important;padding:.4rem .5rem!important}
+#sculpt-app button,#sculpt-app a,#sculpt-app summary{background-image:linear-gradient(90deg,#ffb58a88 var(--dwell,0%),transparent var(--dwell,0%))}
+#sculpt-app .gesture-hover{outline-color:#ffd7b0}
+@media(max-width:600px){
+ .sculpt-stage{padding-right:96px;height:clamp(540px,78dvh,720px)}
+ .sculpt-tools{width:96px;padding:5px}
+ #sculpt-app .sculpt-tools button{font-size:.7rem;padding:.35rem .2rem}
+ .sculpt-camera{right:104px;width:min(43%,180px)}
+}
+.sculpt-wheel{background:radial-gradient(circle,#172320 0 22%,transparent 23%),repeating-conic-gradient(from calc(var(--sector,45deg) / -2),#455b50 0 1deg,#172320 1deg var(--sector,45deg))}
