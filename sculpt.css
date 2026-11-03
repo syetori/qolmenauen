@@ -52,3 +52,8 @@ body[data-workspace=sculpt]>main{width:min(97vw,1680px);max-width:none}
 #sculpt-app .sculpt-tools button{min-width:0;white-space:normal;overflow-wrap:anywhere;padding-inline:.35rem}
 .sculpt-axes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:600px){.sculpt-stage{--tools-column:100px}}
+.sculpt-feed{position:relative;display:grid}
+.sculpt-bones{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.sculpt-preview button{pointer-events:auto;align-self:start;max-width:100%;overflow-wrap:anywhere}
+.sculpt-preview .sculpt-camera{display:block}
+.sculpt-preview .sculpt-camera[hidden]{visibility:hidden}

@@ -32,7 +32,7 @@ function download(data,name,type){
 export function mountSculpt(section){
   section.innerHTML=`
     <div class="sculpt-head"><a href="#">← На главную</a><h1>Мүсін</h1>${button('camera','Включить камеру')}</div>
-    <div class="sculpt-stage"><div class="sculpt-preview"><span>Камера</span><video class="sculpt-camera" muted playsinline hidden></video></div>
+    <div class="sculpt-stage"><div class="sculpt-preview"><span>Камера</span><div class="sculpt-feed"><video class="sculpt-camera" muted playsinline hidden></video><canvas class="sculpt-bones" width="640" height="480" aria-hidden="true"></canvas></div>${button('bones','Скелет рук')}</div>
       <div class="sculpt-tools">${Object.entries(tools).map(([id,label])=>button(id,label)).join('')}
         ${button('undo','Отменить')}${button('redo','Повторить')}${button('show','Показ')}${button('frame','В центр')}
         <div class="sculpt-axes" aria-label="Вид вдоль оси">${button('axisX','X')}${button('axisY','Y')}${button('axisZ','Z')}</div>
@@ -91,6 +91,34 @@ export function mountSculpt(section){
     }
   }
   mirrorView();
+  const bones=get('.sculpt-bones');
+  const ink=bones.getContext('2d');
+  const bonesButton=get('[data-action=bones]');
+  let showBones=localStorage.getItem('musin-bones')!=='false';
+  bonesButton.setAttribute('aria-pressed',String(showBones));
+  const fingers=[[0,1,2,3,4],[0,5,6,7,8],[0,9,10,11,12],[0,13,14,15,16],[0,17,18,19,20],[5,9,13,17]];
+  function drawBones(hands=[]){
+    const width=video.videoWidth||640,height=video.videoHeight||480;
+    if(bones.width!==width||bones.height!==height){bones.width=width;bones.height=height;}
+    ink.clearRect(0,0,width,height);
+    if(!showBones)return;
+    const x=point=>(mirrorSettings.mirrorCamera?1-point.x:point.x)*width;
+    ink.strokeStyle='#c7fc8a';ink.fillStyle='#f0ffda';ink.lineWidth=3;ink.lineCap='round';
+    for(const hand of hands){
+      for(const chain of fingers){
+        ink.beginPath();
+        chain.forEach((index,i)=>{
+          const point=hand[index];
+          if(i===0)ink.moveTo(x(point),point.y*height);
+          else ink.lineTo(x(point),point.y*height);
+        });
+        ink.stroke();
+      }
+      for(const point of hand){
+        ink.beginPath();ink.arc(x(point),point.y*height,3,0,2*Math.PI);ink.fill();
+      }
+    }
+  }
   const blocked=new Set(), palmGuard=new Set();
   let layout=Object.keys(tools);
   try{
@@ -249,7 +277,7 @@ export function mountSculpt(section){
     const progress=clamp((now-dwell.start)/1650,0,1);
     control.style.setProperty('--dwell',progress*100+'%');
     if(progress<1)return false;
-    dwell.start=now;
+    dwell.start=control.dataset.action==='bones'?Infinity:now;
     control.style.setProperty('--dwell','0%');
     if(!control.matches('input[type=range]'))control.click();
     return true;
@@ -271,6 +299,7 @@ export function mountSculpt(section){
     wheel.hidden=false;
   }
   function resetGestures(){
+    drawBones();
     end();closeWheel();old.clear();blocked.clear();palmGuard.clear();
     pose=null;slider=null;clearDwell();cursor.hidden=true;
     hover?.classList.remove('gesture-hover');hover=null;
@@ -281,7 +310,9 @@ export function mountSculpt(section){
     return {x:b.left+b.width*clamp((h.tip.x-.08)/.84,0,.999),y:top+(bottom-top)*clamp((h.tip.y-.08)/.84,0,.999)};
   }
   function handsFrame(data){
-    if(!active||mouse)return;
+    if(!active)return;
+    drawBones(data.landmarks);
+    if(mouse)return;
     const hands=data.landmarks.map((p,i)=>{
       const id=data.handedness?.[i]?.[0]?.categoryName||String(i), prior=old.get(id);
       const mask=fingerMask(p,prior?.mask||0), span=Math.max(.03,gap(p[0],p[9]),gap(p[5],p[17]));
@@ -442,6 +473,9 @@ export function mountSculpt(section){
       case 'undo':case 'redo':end();remesh(action);autosave();break;
       case 'symmetry':end();symmetry=!symmetry;b.setAttribute('aria-pressed',String(symmetry));break;
       case 'show':end();show=!show;grid.visible=!show;b.setAttribute('aria-pressed',String(show));break;
+      case 'bones':
+        showBones=!showBones;localStorage.setItem('musin-bones',String(showBones));
+        b.setAttribute('aria-pressed',String(showBones));drawBones();break;
       case 'mirrorCamera':case 'mirrorControls':
         mirrorSettings[action]=!mirrorSettings[action];
         localStorage.setItem('musin-'+action,String(mirrorSettings[action]));
