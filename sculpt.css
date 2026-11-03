@@ -1,0 +1,24 @@
+#sculpt-app{--clay:#ffc5a5; margin-bottom:4rem}
+.sculpt-head,.sculpt-tools,.sculpt-settings,.sculpt-files{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.sculpt-head{justify-content:space-between;margin:1rem 0}
+.sculpt-head h1{margin:0;font-size:clamp(2rem,6vw,4rem)}
+.sculpt-stage{position:relative;height:clamp(420px,68vh,900px);overflow:hidden;border:1px solid #596257;border-radius:20px;background:#222a29;touch-action:none}
+.sculpt-stage>canvas{display:block;width:100%;height:100%}
+.sculpt-camera{position:absolute;bottom:12px;right:12px;width:min(23%,160px);border-radius:10px;transform:scaleX(-1);pointer-events:none}
+.sculpt-tools{position:absolute;top:12px;left:12px;right:12px;pointer-events:none}
+.sculpt-tools button,.sculpt-tools a{pointer-events:auto}
+#sculpt-app button{padding:.5rem .8rem;font-size:.87rem}
+#sculpt-app button[aria-pressed=true],#sculpt-app .gesture-hover{outline:2px solid var(--clay);outline-offset:2px}
+.sculpt-settings,.sculpt-files{margin:.8rem 0}
+.sculpt-settings label{display:grid;gap:.25rem;min-width:100px;font-size:.82rem}
+.sculpt-settings input[type=range]{width:100px}
+.sculpt-cursor,.sculpt-wheel{position:absolute;pointer-events:none;z-index:2}
+.sculpt-cursor{border:2px solid #fff;border-radius:50%;width:18px;height:18px;transform:translate(-50%,-50%);box-shadow:0 0 6px #000}
+.sculpt-cursor.active{background:#ffc5a5aa}
+.sculpt-wheel{width:208px;height:208px;transform:translate(-50%,-50%);border-radius:50%;background:#101918ec;outline:1px solid #ffc5a577}
+.sculpt-wheel button{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;white-space:nowrap}
+.sculpt-wheel button.hot{background:#ffc5a5;color:#171b19}
+.sculpt-layout{display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0}
+.sculpt-layout select{max-width:145px}
+.sculpt-status{min-height:1.5em;color:#d6dccd}
+.entry-sculpt .entry-art{display:grid;place-items:center;font-size:4.5rem;color:#ffc5a5}
