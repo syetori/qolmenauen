@@ -58,3 +58,4 @@ body[data-workspace=sculpt]>main{width:min(97vw,1680px);max-width:none}
 .sculpt-preview .sculpt-camera{display:block}
 .sculpt-preview .sculpt-camera[hidden]{visibility:hidden}
 .sculpt-feed :is(video,canvas){transform:none}
+.sculpt-stage > canvas{transform:none}

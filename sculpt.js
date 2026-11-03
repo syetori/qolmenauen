@@ -367,12 +367,15 @@ export function mountSculpt(section){
       if(hold?.id!==two.id)hold={id:two.id,time:performance.now()};
       if(performance.now()-hold.time>=1500){end();pose=null;openWheel(two,point(two));return;}
     }else hold=null;
+    const fists=hands.filter(h=>h.fist&&!palmGuard.has(h.id));
+    const navigating=pinches.length===2||fists.length>0;
+    if(navigating){cursor.hidden=true;slider=null;}
     const control=document.elementFromPoint(p.x,p.y)?.closest('button,input[type=range],a,summary');
-    const ui=section.contains(control)?control:null;
+    const ui=!navigating&&section.contains(control)?control:null;
     hover?.classList.remove('gesture-hover');hover=ui;hover?.classList.add('gesture-hover');
     if(slider?.id!==hand.id||!hand.pinch)slider=null;
     if(!hand.pinch){clearDwell();}
-    if((ui||slider||!insideStage(p,rect))&&!(hand.fist&&!hand.pinch)){
+    if(!navigating&&(ui||slider||!insideStage(p,rect))){
       end();pose=null;
       if(hand.pinch)blocked.add(hand.id);
       if(!slider&&ui&&activate(ui,hand)&&ui.matches('input[type=range]'))slider={id:hand.id,control:ui};
@@ -386,9 +389,9 @@ export function mountSculpt(section){
     clearDwell();
     const palm=hands.find(h=>h.id!==hand.id&&h.palm);
     if(palm&&hand.pinch)palmGuard.add(palm.id);
-    const fists=hands.filter(h=>h.fist&&!palmGuard.has(h.id));
+
     if(lost&&hand.pinch)blocked.add(hand.id);
-    const brush=hand.pinch&&palm&&!blocked.has(hand.id)&&!show;
+    const brush=!navigating&&hand.pinch&&palm&&!blocked.has(hand.id)&&!show;
     if(brush){
       cursor.classList.add('active');dab(p.x,p.y);pose={brush:hand.id};return;
     }
