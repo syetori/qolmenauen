@@ -36,7 +36,8 @@ export function mountSculpt(section){
       <div class="sculpt-tools">${Object.entries(tools).map(([id,label])=>button(id,label)).join('')}
         ${button('undo','Отменить')}${button('redo','Повторить')}${button('show','Показ')}${button('frame','В центр')}
         <div class="sculpt-axes" aria-label="Вид вдоль оси">${button('axisX','X')}${button('axisY','Y')}${button('axisZ','Z')}</div>
-        ${button('mirror','Зеркало')}
+        ${button('mirrorCamera','Зеркало камеры')}
+        ${button('mirrorControls','Зеркало курсора')}
       </div>
       <div class="sculpt-cursor" hidden></div><div class="sculpt-wheel" hidden></div>
     </div>
@@ -57,7 +58,7 @@ export function mountSculpt(section){
       ${button('glb','GLB')}${button('obj','OBJ + MTL')}${button('stl','STL')}${button('png','PNG')}${button('jpeg','JPEG')}
     </div>
     <details><summary>Настроить круг инструментов</summary><label>Секторов <select id="count"><option>6</option><option selected>8</option></select></label><div class="sculpt-layout"></div></details>
-    <p>Удерживайте щипок над кнопкой около 1,7 секунды. Щипок и ладонь лепят. Два щипка приближают и сдвигают вид. Кулак вращает модель, два кулака обходят сцену. Кулак и щипок меняют размер. Два пальца вместе открывают круг.</p>
+    <p>Кнопка срабатывает каждые 1,7 секунды, пока вы держите над ней щипок. Щипок и ладонь лепят. Два щипка приближают и сдвигают вид. Кулак вращает модель, два кулака обходят сцену. Кулак и щипок меняют размер. Два пальца вместе открывают круг.</p>
     <p>Мышь лепит левой кнопкой, вращает вид правой и приближает колесом.</p>`;
   const get=s=>section.querySelector(s), value=id=>get('#'+id).value;
   const stage=get('.sculpt-stage'), video=get('video'), cursor=get('.sculpt-cursor'), wheel=get('.sculpt-wheel');
@@ -78,9 +79,17 @@ export function mountSculpt(section){
   const send=(type,extra={})=>worker.postMessage({type,...extra});
   let active=false, raf, time=0, tool='add', symmetry=false, show=false, mouse=null;
   let stroke=false, previous=null, pending=[], outstanding=0, saveTimer, saveFile=false;
-  let old=new Map(), pose=null, hold=null, radial=null, hover=null, slider=null, dwell=null, fired=false;
-  let mirror=localStorage.getItem('musin-mirror')==='true';
-  function mirrorView(){video.style.transform=mirror?'scaleX(-1)':'none';get('[data-action=mirror]').setAttribute('aria-pressed',String(mirror));}
+  let old=new Map(), pose=null, hold=null, radial=null, hover=null, slider=null, dwell=null;
+  const mirrorSettings={
+    mirrorCamera:localStorage.getItem('musin-mirrorCamera')!=='false',
+    mirrorControls:localStorage.getItem('musin-mirrorControls')!=='false'
+  };
+  function mirrorView(){
+    video.style.transform=mirrorSettings.mirrorCamera?'scaleX(-1)':'none';
+    for(const [action,enabled] of Object.entries(mirrorSettings)){
+      get('[data-action='+action+']').setAttribute('aria-pressed',String(enabled));
+    }
+  }
   mirrorView();
   const blocked=new Set(), palmGuard=new Set();
   let layout=Object.keys(tools);
@@ -232,7 +241,7 @@ export function mountSculpt(section){
     dwell=null;
   }
   function activate(control,hand){
-    if(!hand.pinch||fired){clearDwell();return false;}
+    if(!hand.pinch){clearDwell();return false;}
     const now=performance.now();
     if(dwell?.control!==control||dwell.id!==hand.id){
       clearDwell();dwell={control,id:hand.id,start:now};
@@ -240,7 +249,8 @@ export function mountSculpt(section){
     const progress=clamp((now-dwell.start)/1650,0,1);
     control.style.setProperty('--dwell',progress*100+'%');
     if(progress<1)return false;
-    fired=true;clearDwell();
+    dwell.start=now;
+    control.style.setProperty('--dwell','0%');
     if(!control.matches('input[type=range]'))control.click();
     return true;
   }
@@ -262,7 +272,7 @@ export function mountSculpt(section){
   }
   function resetGestures(){
     end();closeWheel();old.clear();blocked.clear();palmGuard.clear();
-    pose=null;slider=null;dwell=null;fired=false;cursor.hidden=true;
+    pose=null;slider=null;clearDwell();cursor.hidden=true;
     hover?.classList.remove('gesture-hover');hover=null;
   }
   function point(h){
@@ -281,7 +291,7 @@ export function mountSculpt(section){
       const fistPose=(mask&30)===0&&(!pinch||foldedIndex);
       const fistSince=fistPose?(prior?.fistSince??performance.now()):null;
       const fist=fistPose&&performance.now()-fistSince>=90;
-      const x=v=>mirror?1-v:v;
+      const x=v=>mirrorSettings.mirrorControls?1-v:v;
       const tip=pinch?mid(p[4],p[8]):p[8];
       return {id,mask,pinch:pinch&&!fist,fistSince,tip:{x:x(tip.x),y:tip.y},
         grip:{x:x(p[9].x),y:p[9].y}, palm:!pinch&&(mask&30)===30&&gap(p[5],p[17])/span>.43,
@@ -305,7 +315,7 @@ export function mountSculpt(section){
       const owner=hands.find(h=>h.id===radial.id);
       if(!owner){closeWheel();return;}
       const second=hands.find(h=>h.id!==owner.id&&h.pinch);
-      if(!second){fired=false;clearDwell();}
+      if(!second){clearDwell();}
       if(second){
         const at=point(second), target=document.elementFromPoint(at.x,at.y);
         if(target?.matches('button')&&wheel.contains(target)){
@@ -330,7 +340,7 @@ export function mountSculpt(section){
     const ui=section.contains(control)?control:null;
     hover?.classList.remove('gesture-hover');hover=ui;hover?.classList.add('gesture-hover');
     if(slider?.id!==hand.id||!hand.pinch)slider=null;
-    if(!hand.pinch){fired=false;clearDwell();}
+    if(!hand.pinch){clearDwell();}
     if((ui||slider||!insideStage(p,rect))&&!(hand.fist&&!hand.pinch)){
       end();pose=null;
       if(hand.pinch)blocked.add(hand.id);
@@ -432,7 +442,10 @@ export function mountSculpt(section){
       case 'undo':case 'redo':end();remesh(action);autosave();break;
       case 'symmetry':end();symmetry=!symmetry;b.setAttribute('aria-pressed',String(symmetry));break;
       case 'show':end();show=!show;grid.visible=!show;b.setAttribute('aria-pressed',String(show));break;
-      case 'mirror': mirror=!mirror;localStorage.setItem('musin-mirror',String(mirror));mirrorView();resetGestures();break;
+      case 'mirrorCamera':case 'mirrorControls':
+        mirrorSettings[action]=!mirrorSettings[action];
+        localStorage.setItem('musin-'+action,String(mirrorSettings[action]));
+        mirrorView();resetGestures();break;
       case 'axisX':case 'axisY':case 'axisZ': {
         end();target.set(0,0,0);
         const axis=action.slice(-1);

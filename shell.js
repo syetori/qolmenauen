@@ -8,7 +8,7 @@ window.addEventListener('qolmen-route', async ({detail:{route}})=>{
   if(route!=='sculpt'){sculpt?.stop();return;}
   document.title='Мүсін · Qolmen';
   try {
-    sculptLoading ||= import('./sculpt.js?v=14').then(module=>module.mountSculpt(section));
+    sculptLoading ||= import('./sculpt.js?v=15').then(module=>module.mountSculpt(section));
     sculpt=await sculptLoading;
     if(location.hash==='#sculpt')sculpt.enter();
   } catch(error) {
