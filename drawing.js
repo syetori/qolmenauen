@@ -1,6 +1,6 @@
 import {DrawingDocument,GestureState,SmoothPoint,PALETTE,ART_WIDTH,ART_HEIGHT,clamp,screenToWorld,twoHandView,brushFromMotion,finishStroke} from './drawing-core.js?v=7';
 import {DrawingRenderer} from './drawing-renderer.js?v=7';
-import {HandCamera} from './hand-camera.js?v=9';
+import {HandCamera} from './hand-camera.js?v=11';
 import {fingerMask} from './music.js?v=7';
 const edges=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
 function openStore(){return new Promise((resolve,reject)=>{if(!globalThis.indexedDB){reject(Error('IndexedDB недоступна'));return;}const request=indexedDB.open('qolmen-suret',1),timer=setTimeout(()=>reject(Error('Хранилище не ответило')),3500);request.onupgradeneeded=()=>request.result.createObjectStore('documents');request.onsuccess=()=>{clearTimeout(timer);resolve(request.result);};request.onerror=()=>{clearTimeout(timer);reject(request.error);};request.onblocked=()=>{clearTimeout(timer);reject(Error('Хранилище занято другой вкладкой'));};});}

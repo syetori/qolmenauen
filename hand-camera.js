@@ -1,4 +1,4 @@
-import {createMainDetector,prepareTracking} from './detector.js?v=9';
+import {createMainDetector,prepareTracking} from './detector.js?v=11';
 export class HandCamera{
  constructor(video,{onResults,onState,onLost}={}){this.video=video;this.onResults=onResults||(()=>{});this.onState=onState||(()=>{});this.onLost=onLost||(()=>{});this.generation=0;this.running=false;this.ready=false;this.busy=false;this.worker=null;this.detector=null;this.stream=null;this.raf=null;this.timeout=null;this.lastResult=0;this.lastVideo=-1;this.fallbackPending=false;this.watchdog=setInterval(()=>{if(this.running&&this.ready&&this.busy&&performance.now()-this.lastResult>2500)this.fallback('Нет результатов распознавания',this.generation);else if(this.running&&this.ready&&performance.now()-this.lastResult>350)this.onLost();},120);}
  state(type,message){this.onState({type,message});}
